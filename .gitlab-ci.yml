@@ -30,6 +30,7 @@ build:
     - go mod download   # Скачиваем зависимости
     - cd cmd/pooler
     - go build -o myapp # Сборка проекта
+    - ls -l  # Проверяем, где находится файл
   artifacts:
     paths:
       - cmd/pooler/alph_pooler           # Сохранение скомпилированного бинарного файла
