@@ -28,6 +28,7 @@ build:
   image: golang:1.22    # Указываем Docker-образ с Go для сборки
   script:
     - go mod download   # Скачиваем зависимости
+    - cd cmd/pooler
     - go build -o myapp # Сборка проекта
   artifacts:
     paths:
