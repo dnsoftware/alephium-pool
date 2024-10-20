@@ -3,15 +3,24 @@ stages:
   - build
   - deploy
 
+variables:
+  GOPATH: "$CI_PROJECT_DIR/go"
+  GOBIN: "$GOPATH/bin"
+  PATH: "$GOBIN:$PATH"
+
 # Этап тестирования
 test:
   stage: test
   image: golang:1.22
+  before_script:
+    # Устанавливаем go-junit-report
+    - go install github.com/jstemmer/go-junit-report@latest
   script:
-    - go test ./... -v | go-junit-report > report.xml     # Запуск всех тестов
+    - go test ./... -v |  $GOBIN/go-junit-report > report.xml     # Запуск всех тестов
   artifacts:
     paths:
       - report.xml
+    when: always
 
 # Этап сборки
 build:
