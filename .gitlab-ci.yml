@@ -32,7 +32,7 @@ build:
     - go build -o myapp # Сборка проекта
   artifacts:
     paths:
-      - alph_pooler           # Сохранение скомпилированного бинарного файла
+      - cmd/pooler/alph_pooler           # Сохранение скомпилированного бинарного файла
 
 # Этап деплоя (опционально)
 deploy:
