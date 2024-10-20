@@ -1,0 +1,37 @@
+stages:
+  - build
+  - test
+  - deploy
+
+# Этап сборки
+build:
+  stage: build
+  image: golang:1.22    # Указываем Docker-образ с Go для сборки
+  script:
+    - go mod download   # Скачиваем зависимости
+    - go build -o myapp # Сборка проекта
+  artifacts:
+    paths:
+      - myapp           # Сохранение скомпилированного бинарного файла
+
+# Этап тестирования
+test:
+  stage: test
+  image: golang:1.22
+  script:
+    - go test ./...     # Запуск всех тестов
+  artifacts:
+    when: on_failure    # Артефакты будут доступны в случае неудачи
+    reports:
+      junit: report.xml # (опционально) JUnit отчеты для интеграции с GitLab
+
+# Этап деплоя (опционально)
+deploy:
+  stage: deploy
+  only:
+    - master # Деплой будет выполняться только при слиянии в ветку master
+  script:
+    - echo "Deploying myapp"
+  environment:
+    name: production
+    url: https://myapp.com # URL вашего приложения после деплоя
