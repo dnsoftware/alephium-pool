@@ -1,18 +1,7 @@
 stages:
-  - build
   - test
+  - build
   - deploy
-
-# Этап сборки
-build:
-  stage: build
-  image: golang:1.22    # Указываем Docker-образ с Go для сборки
-  script:
-    - go mod download   # Скачиваем зависимости
-    - go build -o myapp # Сборка проекта
-  artifacts:
-    paths:
-      - myapp           # Сохранение скомпилированного бинарного файла
 
 # Этап тестирования
 test:
@@ -24,6 +13,17 @@ test:
     when: on_failure    # Артефакты будут доступны в случае неудачи
     reports:
       junit: report.xml # (опционально) JUnit отчеты для интеграции с GitLab
+
+# Этап сборки
+build:
+  stage: build
+  image: golang:1.22    # Указываем Docker-образ с Go для сборки
+  script:
+    - go mod download   # Скачиваем зависимости
+    - go build -o myapp # Сборка проекта
+  artifacts:
+    paths:
+      - myapp           # Сохранение скомпилированного бинарного файла
 
 # Этап деплоя (опционально)
 deploy:
