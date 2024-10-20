@@ -10,6 +10,8 @@ test:
   script:
     - go test ./...     # Запуск всех тестов
   artifacts:
+    paths:
+      - report.xml
     when: on_failure    # Артефакты будут доступны в случае неудачи
     reports:
       junit: report.xml # (опционально) JUnit отчеты для интеграции с GitLab
