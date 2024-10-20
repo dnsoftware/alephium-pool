@@ -1,0 +1,86 @@
+appEnv: local
+coin: KAS
+coinUnits: 100000000
+coinDecimalPlaces: 8
+poolWallet: 18v4fjTmimVh8TeAWYwFAdzUB4TBhr6Xjo2zPHBGMXSiH     # кошелек пула куда будут падать награды за блок и с которого будут выплаты майнерам
+
+blockRefreshInterval: 120ms
+vardiffRecalcInterval: 5s
+
+withholdPercent: 1
+benefitWorkerPeriod: 7 # льготный период для новых пользователей
+shareTrustMode: true   # режим доверия к шарам (принимаются без проверки, проверка только порога и непросроченности задания)
+nicehashThreshold: 600
+
+rewardMethod: PPLNS
+rewardOptions:        # дополнительные настройки для разных методом вознаграждений
+  PPLNS:
+    - period: 24h
+
+coinnodes: # ноды монеты, одна имеет статус основной, остальные резервные для переключения в случае падения основной
+  - type: main      # тип ноды, главная или резервная (в случае падения главной - переключается на резерв, при восстановлении - назад)
+    enabled: true   # активность (если включена - используется в работе)
+    host: 127.0.0.1 # IP или домен
+    port: 10973     # порт
+    timeout: 10s    # таймаут, по истечении которого нода считается недоступной и происходит переключение
+
+  - type: standby   # резервная
+    enabled: true
+    host: 127.0.0.1
+    port: 10974
+    timeout: 10s
+
+stratum:
+  listen:
+    - host: 0.0.0.0
+      port: 20032
+      diff: 0.001
+      minDiff: 0.005
+      maxConn: 32768
+      desc: Low end hardware
+      diff1TargetNumZero: 30
+      jobExpiryPeriod: 10
+      timeout: 15m  # таймаут подключения майнера
+      isTls: false
+
+    - host: 0.0.0.0
+      port: 20132
+      diff: 0.1
+      minDiff: 0.1
+      maxConn: 32768
+      desc: ASIC SOLO # не менять, используется для определения асик майнеров
+      diff1TargetNumZero: 30
+      jobExpiryPeriod: 10
+      timeout: 15m
+      isTls: false
+
+    - host: 0.0.0.0
+      port: 2122
+      diff: 50
+      minDiff: 1
+      maxConn: 32768
+      desc: SSL ASIC PROP # не менять, используется для определения асик майнеров
+      diff1TargetNumZero: 30
+      jobExpiryPeriod: 10
+      timeout: 15m
+      isTls: true
+
+    - host: 0.0.0.0
+      port: 6666
+      diff: 2
+      minDiff: 0.001
+      maxConn: 32768
+      desc: SSL connection
+      diff1TargetNumZero: 30
+      jobExpiryPeriod: 10
+      timeout: 15m
+      isTls: true
+
+  varDiff:
+    enabled: true
+    minDiff: 0.0001
+    maxDiff: 10000
+    targetTime: 30
+    retargetTime: 1200
+    variancePercent: 30
+    maxJump: 1000
