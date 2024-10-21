@@ -39,7 +39,7 @@ build:
 deploy:
   stage: deploy
   only:
-    - master # Деплой будет выполняться только при слиянии в ветку master
+    - prod # Деплой будет выполняться только при слиянии в ветку master
   script:
     - echo "Deploying myapp"
   environment:
