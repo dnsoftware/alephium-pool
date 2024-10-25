@@ -55,10 +55,10 @@ deploy:
 
     # Получение секрета из Vault
     - echo "Получение секрета из Vault"
-    - export MY_SECRET=$(curl -k -s --header "\"X-Vault-Token:\" ${VAULT_TOKEN}" ${VAULT_ADDR}/v1/${VAULT_PATH}/secret/data/gitlab/test )
+    - export MY_SECRET=$(curl -k -s --header "\"X-Vault-Token:\" ${VAULT_TOKEN}" ${VAULT_ADDR}/v1/${VAULT_PATH}/secret/data/gitlab/test | jq -r .data.value)
 
     # Используйте секреты в дальнейших шагах
-    - echo "\"Секрет успешно получен:\" ${MY_SECRET} "
+    - echo "\"Секрет успешно получен:\" ${MY_SECRET} ${VAULT_TOKEN}"
 
   environment:
     name: production
