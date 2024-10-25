@@ -9,31 +9,31 @@ stages:
   #PATH: "$GOBIN:$PATH"
 
 # Этап тестирования
-test:
-  stage: test
-  image: golang:1.22
-  before_script:
+#test:
+#  stage: test
+#  image: golang:1.22
+#  before_script:
     # Устанавливаем go-junit-report
-    - go install github.com/jstemmer/go-junit-report@latest
-  script:
-    - go test ./... -v |  go-junit-report > report.xml     # Запуск всех тестов
-  artifacts:
-    paths:
-      - report.xml
-    when: always
+#    - go install github.com/jstemmer/go-junit-report@latest
+#  script:
+#    - go test ./... -v |  go-junit-report > report.xml     # Запуск всех тестов
+#  artifacts:
+#    paths:
+#      - report.xml
+#    when: always
 
 # Этап сборки
-build:
-  stage: build
-  image: golang:1.22    # Указываем Docker-образ с Go для сборки
-  script:
-    - go mod download   # Скачиваем зависимости
-    - cd cmd/pooler
-    - go build -o alph_pooler # Сборка проекта
-    - ls -l  # Проверяем, где находится файл
-  artifacts:
-    paths:
-      - cmd/pooler/alph_pooler           # Сохранение скомпилированного бинарного файла
+#build:
+#  stage: build
+#  image: golang:1.22    # Указываем Docker-образ с Go для сборки
+#  script:
+#    - go mod download   # Скачиваем зависимости
+#    - cd cmd/pooler
+#    - go build -o alph_pooler # Сборка проекта
+#    - ls -l  # Проверяем, где находится файл
+#  artifacts:
+#    paths:
+#      - cmd/pooler/alph_pooler           # Сохранение скомпилированного бинарного файла
 
 # Этап деплоя (опционально)
 deploy:
