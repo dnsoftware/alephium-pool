@@ -58,7 +58,7 @@ deploy:
     - export MY_SECRET=$(curl -k -s --header "\"X-Vault-Token:\" ${VAULT_TOKEN}" ${VAULT_ADDR}/v1/${VAULT_PATH}/test | jq -r .data.value)
 
     # Используйте секреты в дальнейших шагах
-    - echo "\"Секрет успешно получен:\" ${MY_SECRET} ${VAULT_TOKEN}"
+    - echo "\"Секрет успешно получен:\" ${MY_SECRET} ${VAULT_ADDR}/v1/${VAULT_PATH}/test"
 
   environment:
     name: production
