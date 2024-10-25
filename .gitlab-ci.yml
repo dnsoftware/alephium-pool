@@ -40,11 +40,12 @@ deploy:
   stage: deploy
   before_script:
     # Установите Vault CLI, если он не установлен в контейнере
-    - apt-get update && apt-get install -y gnupg software-properties-common wget
-#    - wget -qO- https://apt.releases.hashicorp.com/gpg | apt-key add -
-#    - echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/hashicorp.list
-#    - apt-get update
-    - apt-get install -y vault
+    - apt-get update && apt-get install -y wget unzip
+    - wget https://releases.hashicorp.com/vault/1.14.3/vault_1.14.3_linux_amd64.zip
+    - unzip vault_1.14.3_linux_amd64.zip
+    - mv vault /usr/local/bin/
+    - chmod +x /usr/local/bin/vault
+    - vault --version  # Проверка установленной версии
 
   only:
     - master # Деплой будет выполняться только при слиянии в ветку master
