@@ -38,10 +38,22 @@ build:
 # Этап деплоя (опционально)
 deploy:
   stage: deploy
+  before_script:
+    # Установите Vault CLI, если он не установлен в контейнере
+    - apt update && apt install -y vault jq
   only:
-    - prod # Деплой будет выполняться только при слиянии в ветку master
+    - master # Деплой будет выполняться только при слиянии в ветку master
   script:
-    - echo "Deploying myapp"
+    - echo "Получение токена от Vault"
+    - export VAULT_TOKEN=$(curl -s --request POST --data '{"role_id": "'"${VAULT_ROLE_ID}"'", "secret_id": "'"${VAULT_SECRET_ID}"'"}' ${VAULT_ADDR}/v1/auth/approle/login | jq -r .auth.client_token)
+
+    # Получение секрета из Vault
+    - echo "Получение секрета из Vault"
+    - export MY_SECRET=$(curl -s --header "X-Vault-Token: ${VAULT_TOKEN}" ${VAULT_ADDR}/v1/${VAULT_PATH} | jq -r .data.data.value)
+
+    # Используйте секреты в дальнейших шагах
+    - echo "Секрет успешно получен: ${MY_SECRET}"
+
   environment:
     name: production
     url: https://myapp.com # URL вашего приложения после деплоя

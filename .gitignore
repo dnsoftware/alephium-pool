@@ -1,2 +1,4 @@
 /.idea/
 /cmd/pooler/alph_pooler
+/cmd/pooler/etcdconf.yaml
+/certs/*
