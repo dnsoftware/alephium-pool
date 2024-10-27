@@ -61,7 +61,7 @@ deploy:
       ETCD_PASSWORD=$(curl -k -s --header "X-Vault-Token: $VAULT_TOKEN" ${VAULT_ADDR}/v1/${VAULT_PATH}/etcd | jq -r .data.password)
       
       COIN_CLUSTER=$(curl -k -s --header "X-Vault-Token: $VAULT_TOKEN" ${VAULT_ADDR}/v1/${VAULT_PATH}/alph_cluster)
-      COIN_SERVER_ID = echo $COIN_CLUSTER | jq -r .data.id 
+      COIN_SERVER_ID=$(echo $COIN_CLUSTER | jq -r .data.id) 
 
     - echo "$COIN_SERVER_ID"
 
