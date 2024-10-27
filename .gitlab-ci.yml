@@ -40,7 +40,7 @@ deploy:
   stage: deploy
   before_script:
     # Установите Vault CLI, если он не установлен в контейнере
-    - apt-get update && apt-get install -y wget unzip jq gettext
+    - apt-get update && apt-get install -y wget unzip jq gettext openssh sshpass
     - wget https://releases.hashicorp.com/vault/1.14.3/vault_1.14.3_linux_amd64.zip
     - unzip vault_1.14.3_linux_amd64.zip
     - mv vault /usr/local/bin/
@@ -59,11 +59,23 @@ deploy:
       CA_CERT=$(curl -k -s --header "X-Vault-Token: $VAULT_TOKEN" ${VAULT_ADDR}/v1/${VAULT_PATH}/cacert | jq -r .data.value)
       ETCD_LOGIN=$(curl -k -s --header "X-Vault-Token: $VAULT_TOKEN" ${VAULT_ADDR}/v1/${VAULT_PATH}/etcd | jq -r .data.login)
       ETCD_PASSWORD=$(curl -k -s --header "X-Vault-Token: $VAULT_TOKEN" ${VAULT_ADDR}/v1/${VAULT_PATH}/etcd | jq -r .data.password)
+      ALPH_CLUSTER=$(curl -k -s --header "X-Vault-Token: $VAULT_TOKEN" ${VAULT_ADDR}/v1/${VAULT_PATH}/etcd)
+      - echo "$ALPH_CLUSTER"
 
     # Сохраняем CA сертификат в папку сертификатов
     - echo "\"Секрет успешно получен:\""
     - mkdir -p certs
-    - echo "$CA_CERT" > certs/ca.crt
+    - echo "$CA_CERT" > ca.crt
+
+
+
+#    # Получаем список серверов для развертывания и ssh login/password для доступа к ним
+#    - sshpass -p "$SSH_PASSWORD" ssh -o StrictHostKeyChecking=no "$SSH_USER@$SERVER" << EOF
+#      echo "Deploying application..."
+#      docker pull myapp:latest
+#      docker stop myapp || true && docker rm myapp || true
+#      docker run -d --name myapp myapp:latest
+#      EOF
 
     # Генерируем сертификат и приватный ключ, подписанные CA сертификатом
 
