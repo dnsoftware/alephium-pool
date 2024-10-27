@@ -40,7 +40,7 @@ deploy:
   stage: deploy
   before_script:
     # Установите Vault CLI, если он не установлен в контейнере
-    - apt-get update && apt-get install -y wget unzip jq
+    - apt-get update && apt-get install -y wget unzip jq gettext
     - wget https://releases.hashicorp.com/vault/1.14.3/vault_1.14.3_linux_amd64.zip
     - unzip vault_1.14.3_linux_amd64.zip
     - mv vault /usr/local/bin/
@@ -53,13 +53,20 @@ deploy:
     - echo "Получение токена от Vault"
     - export VAULT_TOKEN=$(curl -k -s --request POST --data "{\"role_id\":\"${VAULT_ROLE_ID}\", \"secret_id\":\"${VAULT_SECRET_ID}\"}" ${VAULT_ADDR}/v1/auth/approle/login | jq -r .auth.client_token)
 
-    # Получение секрета из Vault
+    # Получение секретов из Vault
     - echo "Получение секрета из Vault"
     - |
-      export MY_SECRET=$(curl -k -s --header "X-Vault-Token: $VAULT_TOKEN" ${VAULT_ADDR}/v1/${VAULT_PATH}/test | jq -r .data.value)
+      CA_CERT=$(curl -k -s --header "X-Vault-Token: $VAULT_TOKEN" ${VAULT_ADDR}/v1/${VAULT_PATH}/cacert | jq -r .data.value)
+      ETCD_LOGIN=$(curl -k -s --header "X-Vault-Token: $VAULT_TOKEN" ${VAULT_ADDR}/v1/${VAULT_PATH}/etcd | jq -r .data.login)
+      ETCD_PASSWORD=$(curl -k -s --header "X-Vault-Token: $VAULT_TOKEN" ${VAULT_ADDR}/v1/${VAULT_PATH}/etcd | jq -r .data.password)
 
-    # Используйте секреты в дальнейших шагах
-    - echo "\"Секрет успешно получен:\" ${MY_SECRET} ${VAULT_ADDR}/v1/${VAULT_PATH}/test "
+    # Сохраняем CA сертификат в папку сертификатов
+    - echo "\"Секрет успешно получен:\""
+    - echo "$CA_CERT" > certs/ca.crt
+
+    # Генерируем сертификат и приватный ключ, подписанные CA сертификатом
+
+    # Генерируем etcdconf.yaml из шаблона и копируем в нужную папку
 
   environment:
     name: production
