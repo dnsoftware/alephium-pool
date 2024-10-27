@@ -40,7 +40,7 @@ deploy:
   stage: deploy
   before_script:
     # Установите Vault CLI, если он не установлен в контейнере
-    - apt-get update && apt-get install -y wget unzip jq gettext openssh sshpass
+    - apt-get update && apt-get install -y wget unzip jq gettext openssh-client sshpass
     - wget https://releases.hashicorp.com/vault/1.14.3/vault_1.14.3_linux_amd64.zip
     - unzip vault_1.14.3_linux_amd64.zip
     - mv vault /usr/local/bin/
