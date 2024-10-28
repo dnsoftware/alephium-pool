@@ -2,3 +2,4 @@
 /cmd/pooler/alph_pooler
 /cmd/pooler/startconf.yaml
 /certs/*
+!/certs/csr.conf.template
