@@ -4,7 +4,7 @@ services:
   - docker:dind
 
 variables:
-  IMAGE_NAME: "ddaemon/alph_pooler"
+  IMAGE_NAMEd: "ddaemon/alph_pooler"
 
 before_script:
   - apt-get update && apt-get install -y wget unzip jq gettext openssh-client sshpass
@@ -15,9 +15,6 @@ before_script:
   - vault --version  # Проверка установленной версии
   - VAULT_TOKEN=$(curl -k -s --request POST --data "{\"role_id\":\"${VAULT_ROLE_ID}\", \"secret_id\":\"${VAULT_SECRET_ID}\"}" ${VAULT_ADDR}/v1/auth/approle/login | jq -r .auth.client_token)
   - export VAULT_TOKEN
-  - |
-    DOCKER_USERNAME=$(curl -k -s --request GET --header "X-Vault-Token: ${VAULT_TOKEN}" ${VAULT_ADDR}/v1/${VAULT_PATH}/dockerhub  | jq -r .data.login)
-    DOCKER_PASSWORD=$(curl -k -s --request GET --header "X-Vault-Token: ${VAULT_TOKEN}" ${VAULT_ADDR}/v1/${VAULT_PATH}/dockerhub  | jq -r .data.password)
 
 stages:
 #  - test
@@ -46,12 +43,15 @@ stages:
 # Этап сборки
 build:
   stage: build
-  image: golang:1.22    # Указываем Docker-образ с Go для сборки
   script:
     # Сборка образа с использованием Dockerfile
     - docker build -t "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" .
     # Тег для latest, чтобы можно было легко обновлять образ
     - docker tag "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" "$IMAGE_NAME:latest"
+
+    - |
+      DOCKER_USERNAME=$(curl -k -s --request GET --header "X-Vault-Token: ${VAULT_TOKEN}" ${VAULT_ADDR}/v1/${VAULT_PATH}/dockerhub  | jq -r .data.login)
+      DOCKER_PASSWORD=$(curl -k -s --request GET --header "X-Vault-Token: ${VAULT_TOKEN}" ${VAULT_ADDR}/v1/${VAULT_PATH}/dockerhub  | jq -r .data.password)
 
     # Загрузка образа в Docker Hub
     - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
