@@ -76,7 +76,7 @@ deploy:
       # Генерируем стартовый конфиг для доступа к etcd, откада будет загружен основной конфиг
       envsubst < cmd/pooler/startconf.yaml.template > cmd/pooler/startconf.yaml
       # Сохраняем корневой  CA сертификат на диск
-      #mkdir certs
+      mkdir -p certs
       echo "$CA_CERT" > certs/ca.crt
       echo "$CA_KEY" > certs/ca.key
 
@@ -101,7 +101,7 @@ deploy:
       envsubst < certs/csr.conf.template > certs/csr.tmp
     
       sshpass -p "$sshPassword" ssh -o StrictHostKeyChecking=no "$sshLogin@$ip" << EOF
-      mkdir $BASE_PATH
+      mkdir -p $BASE_PATH
       EOF
     
       sshpass -p "$sshPassword" scp cmd/pooler/startconf.yaml "$sshLogin@$ip":$BASE_PATH/startconf.yaml
