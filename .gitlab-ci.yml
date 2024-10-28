@@ -1,7 +1,24 @@
+image: docker:latest
+
+services:
+  - docker:dind
+
+variables:
+  IMAGE_NAME: "ddaemon/alph_pooler"
+
+before_script:
+  - VAULT_TOKEN=$(curl -k -s --request POST --data "{\"role_id\":\"${VAULT_ROLE_ID}\", \"secret_id\":\"${VAULT_SECRET_ID}\"}" ${VAULT_ADDR}/v1/auth/approle/login | jq -r .auth.client_token)
+  - export VAULT_TOKEN
+  - |
+    $DOCKER_USERNAME=$(curl -k -s --request GET --header "X-Vault-Token: ${VAULT_TOKEN}" ${VAULT_ADDR}/v1/${VAULT_PATH}/dockerhub  | jq -r .data.login)
+    $DOCKER_PASSWORD=$(curl -k -s --request GET --header "X-Vault-Token: ${VAULT_TOKEN}" ${VAULT_ADDR}/v1/${VAULT_PATH}/dockerhub  | jq -r .data.password)
+
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+
 stages:
 #  - test
-#  - build
-  - deploy
+  - build
+#  - deploy
 
 #variables:
  # GOPATH: "$CI_PROJECT_DIR/go"
@@ -23,123 +40,122 @@ stages:
 #    when: always
 
 # Этап сборки
-#build:
-#  stage: build
-#  image: golang:1.22    # Указываем Docker-образ с Go для сборки
-#  script:
-#    - go mod download   # Скачиваем зависимости
-#    - cd cmd/pooler
-#    - go build -o alph_pooler # Сборка проекта
-#    - ls -l  # Проверяем, где находится файл
-#  artifacts:
-#    paths:
-#      - cmd/pooler/alph_pooler           # Сохранение скомпилированного бинарного файла
-
-# Этап деплоя (опционально)
-deploy:
-  stage: deploy
-  before_script:
-    # Установите Vault CLI, если он не установлен в контейнере
-    - apt-get update && apt-get install -y wget unzip jq gettext openssh-client sshpass
-    - wget https://releases.hashicorp.com/vault/1.14.3/vault_1.14.3_linux_amd64.zip
-    - unzip vault_1.14.3_linux_amd64.zip
-    - mv vault /usr/local/bin/
-    - chmod +x /usr/local/bin/vault
-    - vault --version  # Проверка установленной версии
-
-  only:
-    - master # Деплой будет выполняться только при слиянии в ветку master
+build:
+  stage: build
+  image: golang:1.22    # Указываем Docker-образ с Go для сборки
   script:
-    - echo "Получение токена от Vault"
-    - VAULT_TOKEN=$(curl -k -s --request POST --data "{\"role_id\":\"${VAULT_ROLE_ID}\", \"secret_id\":\"${VAULT_SECRET_ID}\"}" ${VAULT_ADDR}/v1/auth/approle/login | jq -r .auth.client_token)
-    - export VAULT_TOKEN
-    - |
-      # Путь к директории приложения на удаленном сервере
-      BASE_PATH="/home/pool"
-      # Срок действия TLS сертификата в днях
-      CERT_PERIOD=365
+    # Сборка образа с использованием Dockerfile
+    - docker build -t "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" .
+    # Тег для latest, чтобы можно было легко обновлять образ
+    - docker tag "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" "$IMAGE_NAME:latest"
 
+    # Загрузка образа в Docker Hub
+    - docker push "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA"
+    - docker push "$IMAGE_NAME:latest"
 
-# Получение секретов из Vault
-    - echo "Получение секрета из Vault"
-    - |
-      CA_CERT=$(curl -k -s --request GET --header "X-Vault-Token: ${VAULT_TOKEN}" ${VAULT_ADDR}/v1/${VAULT_PATH}/cacert  | jq -r .data.value)
-      CA_KEY=$(curl -k -s --request GET --header "X-Vault-Token: ${VAULT_TOKEN}" ${VAULT_ADDR}/v1/${VAULT_PATH}/cakey  | jq -r .data.value)
-      ETCD_LOGIN=$(curl -k -s --header "X-Vault-Token: ${VAULT_TOKEN}" ${VAULT_ADDR}/v1/${VAULT_PATH}/etcd   | jq -r .data.login)
-      ETCD_PASSWORD=$(curl -k -s --header "X-Vault-Token: ${VAULT_TOKEN}" ${VAULT_ADDR}/v1/${VAULT_PATH}/etcd  | jq -r .data.password)
-      ETCD_NODESLIST=$(curl -k -s --header "X-Vault-Token: ${VAULT_TOKEN}" ${VAULT_ADDR}/v1/${VAULT_PATH}/etcd  | jq -r .data.nodeslist)
-  
-      export ETCD_LOGIN
-      export ETCD_PASSWORD
-      export ETCD_NODESLIST
-
-      # Генерируем стартовый конфиг для доступа к etcd, откада будет загружен основной конфиг
-      envsubst < cmd/pooler/startconf.yaml.template > cmd/pooler/startconf.yaml
-      # Сохраняем корневой  CA сертификат на диск
-      mkdir -p certs
-      echo "$CA_CERT" > certs/ca.crt
-      echo "$CA_KEY" > certs/ca.key
-
-      COIN_CLUSTER=$(curl -k -s --header "X-Vault-Token: $VAULT_TOKEN" ${VAULT_ADDR}/v1/${VAULT_PATH}/alph_cluster)
-
-      echo "$COIN_CLUSTER" | jq -r .data | jq -c 'to_entries[] | select(.value)' | while read -r entry; do
-
-      # Получаем ключ массива
-      key=$(echo "$entry" | jq -r '.key')
-      echo "Array under key: $key"
-
-
-      id=$(echo "$entry" | jq -r ".value.id")
-      ip=$(echo "$entry" | jq -r ".value.ip")
-      sshLogin=$(echo "$entry" | jq -r ".value.sshLogin")
-      sshPassword=$(echo "$entry" | jq -r ".value.sshPassword")
-    
-      CSR_CN=$ip
-      CSR_IP=$ip
-      export CSR_CN
-      export CSR_IP
-      envsubst < certs/csr.conf.template > certs/csr.tmp
-    
-      sshpass -p "$sshPassword" ssh -o StrictHostKeyChecking=no "$sshLogin@$ip" << EOF
-      mkdir -p $BASE_PATH
-      EOF
-    
-      sshpass -p "$sshPassword" scp cmd/pooler/startconf.yaml "$sshLogin@$ip":$BASE_PATH/startconf.yaml
-      sshpass -p "$sshPassword" scp certs/ca.crt "$sshLogin@$ip":$BASE_PATH/ca.crt
-      sshpass -p "$sshPassword" scp certs/ca.key "$sshLogin@$ip":$BASE_PATH/ca.key
-    
-      sshpass -p "$sshPassword" scp certs/csr.tmp "$sshLogin@$ip":$BASE_PATH/csr.conf
-      
-      # Срок истечения действия сертификата, если есть и CERT_PERIOD, если нет
-      DAYS_LEFT=$CERT_PERIOD
-      CERT_EXIST=0
-      if sshpass -p "$sshPassword" ssh -o StrictHostKeyChecking=no "$sshLogin@$ip" "[ -f $BASE_PATH/server.crt ]" ; then
-      CERT_EXIST=1
-      # Получение текущей даты в формате UNIX timestamp
-      CURRENT_DATE=$(date +%s)
-      # Получение даты истечения сертификата в формате UNIX timestamp
-      EXPIRATION_DATE=$(sshpass -p "$sshPassword" ssh -o StrictHostKeyChecking=no "$sshLogin@$ip" \
-      "openssl x509 -enddate -noout -in \"$BASE_PATH/server.crt\" | sed \"s/^notAfter=//\" | xargs -I {} date -d \"{}\" +%s")
-      # Вычисление оставшихся дней до истечения сертификата
-      DAYS_LEFT=$(( (EXPIRATION_DATE - CURRENT_DATE) / 86400 ))
-
-      echo "DAYS LEFT: $DAYS_LEFT"
-
-      fi
-      
-      # Генерация TLS сертификата, если сертификат истекает менее чем через 30 дней или отсутствует
-      if [[ "$CERT_EXIST" -eq 0 ||  $DAYS_LEFT -le 30 ]]; then
-      
-      sshpass -p "$sshPassword" ssh -o StrictHostKeyChecking=no "$sshLogin@$ip" << EOF
-      openssl genrsa -out $BASE_PATH/server.key 4096
-      openssl req -new -key $BASE_PATH/server.key -out $BASE_PATH/server.csr -config $BASE_PATH/csr.conf
-      openssl x509 -req -in $BASE_PATH/server.csr -CA $BASE_PATH/ca.crt -CAkey $BASE_PATH/ca.key -CAcreateserial -out $BASE_PATH/server.crt -days $CERT_PERIOD -sha256
-      
-      EOF
-      
-      fi
-      
-      done
+## Этап деплоя (опционально)
+#deploy:
+#  stage: deploy
+#  before_script:
+#    # Установите Vault CLI, если он не установлен в контейнере
+#    - apt-get update && apt-get install -y wget unzip jq gettext openssh-client sshpass
+#    - wget https://releases.hashicorp.com/vault/1.14.3/vault_1.14.3_linux_amd64.zip
+#    - unzip vault_1.14.3_linux_amd64.zip
+#    - mv vault /usr/local/bin/
+#    - chmod +x /usr/local/bin/vault
+#    - vault --version  # Проверка установленной версии
+#
+#  only:
+#    - master # Деплой будет выполняться только при слиянии в ветку master
+#  script:
+#    - echo "Получение токена от Vault"
+#    - |
+#      # Путь к директории приложения на удаленном сервере
+#      BASE_PATH="/home/pool"
+#      # Срок действия TLS сертификата в днях
+#      CERT_PERIOD=365
+#
+#
+## Получение секретов из Vault
+#    - echo "Получение секрета из Vault"
+#    - |
+#      CA_CERT=$(curl -k -s --request GET --header "X-Vault-Token: ${VAULT_TOKEN}" ${VAULT_ADDR}/v1/${VAULT_PATH}/cacert  | jq -r .data.value)
+#      CA_KEY=$(curl -k -s --request GET --header "X-Vault-Token: ${VAULT_TOKEN}" ${VAULT_ADDR}/v1/${VAULT_PATH}/cakey  | jq -r .data.value)
+#      ETCD_LOGIN=$(curl -k -s --header "X-Vault-Token: ${VAULT_TOKEN}" ${VAULT_ADDR}/v1/${VAULT_PATH}/etcd   | jq -r .data.login)
+#      ETCD_PASSWORD=$(curl -k -s --header "X-Vault-Token: ${VAULT_TOKEN}" ${VAULT_ADDR}/v1/${VAULT_PATH}/etcd  | jq -r .data.password)
+#      ETCD_NODESLIST=$(curl -k -s --header "X-Vault-Token: ${VAULT_TOKEN}" ${VAULT_ADDR}/v1/${VAULT_PATH}/etcd  | jq -r .data.nodeslist)
+#
+#      export ETCD_LOGIN
+#      export ETCD_PASSWORD
+#      export ETCD_NODESLIST
+#
+#      # Генерируем стартовый конфиг для доступа к etcd, откада будет загружен основной конфиг
+#      envsubst < cmd/pooler/startconf.yaml.template > cmd/pooler/startconf.yaml
+#      # Сохраняем корневой  CA сертификат на диск
+#      mkdir -p certs
+#      echo "$CA_CERT" > certs/ca.crt
+#      echo "$CA_KEY" > certs/ca.key
+#
+#      COIN_CLUSTER=$(curl -k -s --header "X-Vault-Token: $VAULT_TOKEN" ${VAULT_ADDR}/v1/${VAULT_PATH}/alph_cluster)
+#
+#      echo "$COIN_CLUSTER" | jq -r .data | jq -c 'to_entries[] | select(.value)' | while read -r entry; do
+#
+#      # Получаем ключ массива
+#      key=$(echo "$entry" | jq -r '.key')
+#      echo "Array under key: $key"
+#
+#
+#      id=$(echo "$entry" | jq -r ".value.id")
+#      ip=$(echo "$entry" | jq -r ".value.ip")
+#      sshLogin=$(echo "$entry" | jq -r ".value.sshLogin")
+#      sshPassword=$(echo "$entry" | jq -r ".value.sshPassword")
+#
+#      CSR_CN=$ip
+#      CSR_IP=$ip
+#      export CSR_CN
+#      export CSR_IP
+#      envsubst < certs/csr.conf.template > certs/csr.tmp
+#
+#      sshpass -p "$sshPassword" ssh -o StrictHostKeyChecking=no "$sshLogin@$ip" << EOF
+#      mkdir -p $BASE_PATH
+#      EOF
+#
+#      sshpass -p "$sshPassword" scp cmd/pooler/startconf.yaml "$sshLogin@$ip":$BASE_PATH/startconf.yaml
+#      sshpass -p "$sshPassword" scp certs/ca.crt "$sshLogin@$ip":$BASE_PATH/ca.crt
+#      sshpass -p "$sshPassword" scp certs/ca.key "$sshLogin@$ip":$BASE_PATH/ca.key
+#
+#      sshpass -p "$sshPassword" scp certs/csr.tmp "$sshLogin@$ip":$BASE_PATH/csr.conf
+#
+#      # Срок истечения действия сертификата, если есть и CERT_PERIOD, если нет
+#      DAYS_LEFT=$CERT_PERIOD
+#      CERT_EXIST=0
+#      if sshpass -p "$sshPassword" ssh -o StrictHostKeyChecking=no "$sshLogin@$ip" "[ -f $BASE_PATH/server.crt ]" ; then
+#      CERT_EXIST=1
+#      # Получение текущей даты в формате UNIX timestamp
+#      CURRENT_DATE=$(date +%s)
+#      # Получение даты истечения сертификата в формате UNIX timestamp
+#      EXPIRATION_DATE=$(sshpass -p "$sshPassword" ssh -o StrictHostKeyChecking=no "$sshLogin@$ip" \
+#      "openssl x509 -enddate -noout -in \"$BASE_PATH/server.crt\" | sed \"s/^notAfter=//\" | xargs -I {} date -d \"{}\" +%s")
+#      # Вычисление оставшихся дней до истечения сертификата
+#      DAYS_LEFT=$(( (EXPIRATION_DATE - CURRENT_DATE) / 86400 ))
+#
+#      echo "DAYS LEFT: $DAYS_LEFT"
+#
+#      fi
+#
+#      # Генерация TLS сертификата, если сертификат истекает менее чем через 30 дней или отсутствует
+#      if [[ "$CERT_EXIST" -eq 0 ||  $DAYS_LEFT -le 30 ]]; then
+#
+#      sshpass -p "$sshPassword" ssh -o StrictHostKeyChecking=no "$sshLogin@$ip" << EOF
+#      openssl genrsa -out $BASE_PATH/server.key 4096
+#      openssl req -new -key $BASE_PATH/server.key -out $BASE_PATH/server.csr -config $BASE_PATH/csr.conf
+#      openssl x509 -req -in $BASE_PATH/server.csr -CA $BASE_PATH/ca.crt -CAkey $BASE_PATH/ca.key -CAcreateserial -out $BASE_PATH/server.crt -days $CERT_PERIOD -sha256
+#
+#      EOF
+#
+#      fi
+#
+#      done
 
   environment:
     name: production
