@@ -47,7 +47,8 @@ build:
     - export VAULT_TOKEN
 
     # Сборка образа с использованием Dockerfile
-    - docker build -t "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" .
+    # - docker build -t "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" .
+    - docker build -f cmd/pooler/Dockerfile -t "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" .
     # Тег для latest, чтобы можно было легко обновлять образ
     - docker tag "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" "$IMAGE_NAME:latest"
 
