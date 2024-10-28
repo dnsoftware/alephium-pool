@@ -76,7 +76,7 @@ deploy:
       # Генерируем стартовый конфиг для доступа к etcd, откада будет загружен основной конфиг
       envsubst < cmd/pooler/startconf.yaml.template > cmd/pooler/startconf.yaml
       # Сохраняем корневой  CA сертификат на диск
-      mkdir certs
+      #mkdir certs
       echo "$CA_CERT" > certs/ca.crt
       echo "$CA_KEY" > certs/ca.key
 
