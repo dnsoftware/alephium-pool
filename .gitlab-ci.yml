@@ -35,6 +35,7 @@ stages:
 # Этап сборки
 build:
   stage: build
+  image: golang:1.22
   script:
     - apt-get update && apt-get install -y curk wget unzip jq gettext openssh-client sshpass
     - wget https://releases.hashicorp.com/vault/1.14.3/vault_1.14.3_linux_amd64.zip
