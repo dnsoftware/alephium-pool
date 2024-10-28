@@ -35,8 +35,6 @@ stages:
 # Этап сборки
 build:
   stage: build
-  image: golang:1.22
-
   script:
 #    - apt-get update && apt-get install -y curl wget unzip jq gettext openssh-client sshpass
     - apk add --no-cache curl wget unzip jq gettext openssh-client sshpass
