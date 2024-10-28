@@ -4,10 +4,10 @@ services:
   - docker:dind
 
 variables:
-  IMAGE_NAMEd: "ddaemon/alph_pooler"
+  IMAGE_NAME: "ddaemon/alph_pooler"
 
 before_script:
-  - apt update && apt install -y curl wget unzip jq gettext openssh-client sshpass
+  - apt-get update && apt-get install -y curk wget unzip jq gettext openssh-client sshpass
   - wget https://releases.hashicorp.com/vault/1.14.3/vault_1.14.3_linux_amd64.zip
   - unzip vault_1.14.3_linux_amd64.zip
   - mv vault /usr/local/bin/
