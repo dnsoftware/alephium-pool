@@ -54,9 +54,9 @@ deploy:
     - VAULT_TOKEN=$(curl -k -s --request POST --data "{\"role_id\":\"${VAULT_ROLE_ID}\", \"secret_id\":\"${VAULT_SECRET_ID}\"}" ${VAULT_ADDR}/v1/auth/approle/login | jq -r .auth.client_token)
     - export VAULT_TOKEN
     - |
-    # Путь к директории приложения на удаленном сервере
+      # Путь к директории приложения на удаленном сервере
       BASE_PATH="/home/pool"
-    # Срок действия TLS сертификата в днях
+      # Срок действия TLS сертификата в днях
       CERT_PERIOD=365
 
 
@@ -73,9 +73,9 @@ deploy:
       export ETCD_PASSWORD
       export ETCD_NODESLIST
 
-    # Генерируем стартовый конфиг для доступа к etcd, откада будет загружен основной конфиг
+      # Генерируем стартовый конфиг для доступа к etcd, откада будет загружен основной конфиг
       envsubst < cmd/pooler/startconf.yaml.template > cmd/pooler/startconf.yaml
-    # Сохраняем корневой  CA сертификат на диск
+      # Сохраняем корневой  CA сертификат на диск
       echo "$CA_CERT" > certs/ca.crt
       echo "$CA_KEY" > certs/ca.key
 
