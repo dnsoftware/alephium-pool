@@ -1,8 +1,8 @@
 etcd:
-  endpoints: "{{nodes_list}}"
+  endpoints: "${ETCD_NODESLIST}"
   auth:
-    username: {{username}}
-    password: {{password}}
+    username: "${ETCD_LOGIN}"
+    password: "${ETCD_PASSWORD}"
   tls:
     ca_file: certs/ca.crt
     cert_file: certs/client.crt
