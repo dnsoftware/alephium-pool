@@ -105,7 +105,6 @@ deploy:
 
       APP_ID=$(echo "$entry" | jq -r ".value.id")
       echo $APP_ID
-      exit(1)
       ip=$(echo "$entry" | jq -r ".value.ip")
       sshLogin=$(echo "$entry" | jq -r ".value.sshLogin")
       sshPassword=$(echo "$entry" | jq -r ".value.sshPassword")
