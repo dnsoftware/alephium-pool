@@ -159,9 +159,9 @@ deploy:
       - |
         sshpass -p "$sshPassword" ssh -o StrictHostKeyChecking=no "$sshLogin@$ip" <<EOF
         docker pull $IMAGE_NAME:latest || exit 1
-        docker stop myapp || true
+        docker stop alph_pooler || true
         docker rm myapp || true
-        docker run -d --name myapp -p 8090:8090 $IMAGE_NAME:latest || exit 1
+        docker run -d --name alph_pooler -p 8090:8090 $IMAGE_NAME:latest || exit 1
       EOF
 
       done
