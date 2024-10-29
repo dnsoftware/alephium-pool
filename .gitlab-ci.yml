@@ -156,7 +156,7 @@ deploy:
       fi
 
       # Остановка старого контейнера и запуск нового
-      - sshpass -p "$sshPassword" ssh -o StrictHostKeyChecking=no "$sshLogin@$ip" <<EOF
+      sshpass -p "$sshPassword" ssh -o StrictHostKeyChecking=no "$sshLogin@$ip" <<EOF
         docker pull $IMAGE_NAME:latest || exit 1
         docker stop alph_pooler || true
         docker rm alph_pooler || true
