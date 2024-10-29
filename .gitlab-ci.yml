@@ -89,8 +89,6 @@ deploy:
       export ETCD_PASSWORD
       export ETCD_NODESLIST
 
-      # Генерируем стартовый конфиг для доступа к etcd, откада будет загружен основной конфиг
-      envsubst < cmd/pooler/startconf.yaml.template > cmd/pooler/startconf.yaml
       # Сохраняем корневой  CA сертификат на диск
       mkdir -p certs
       echo "$CA_CERT" > certs/ca.crt
@@ -105,7 +103,7 @@ deploy:
       echo "Array under key: $key"
 
 
-      id=$(echo "$entry" | jq -r ".value.id")
+      APP_ID=$(echo "$entry" | jq -r ".value.id")
       ip=$(echo "$entry" | jq -r ".value.ip")
       sshLogin=$(echo "$entry" | jq -r ".value.sshLogin")
       sshPassword=$(echo "$entry" | jq -r ".value.sshPassword")
@@ -119,6 +117,9 @@ deploy:
       sshpass -p "$sshPassword" ssh -o StrictHostKeyChecking=no "$sshLogin@$ip" << EOF
       mkdir -p $BASE_PATH
       EOF
+
+      # Генерируем стартовый конфиг для доступа к etcd, откада будет загружен основной конфиг
+      envsubst < cmd/pooler/startconf.yaml.template > cmd/pooler/startconf.yaml
 
       sshpass -p "$sshPassword" scp cmd/pooler/startconf.yaml "$sshLogin@$ip":$BASE_PATH/startconf.yaml
       sshpass -p "$sshPassword" scp certs/ca.crt "$sshLogin@$ip":$BASE_PATH/ca.crt

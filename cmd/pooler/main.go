@@ -4,6 +4,8 @@ package main
 import (
 	"fmt"
 	"net/http"
+
+	"github.com/dnsoftware/alephiumpool/internal/pooler/app"
 )
 
 func handler(w http.ResponseWriter, r *http.Request) {
@@ -15,5 +17,5 @@ func main() {
 	fmt.Println("Starting server on :8090")
 	http.ListenAndServe(":8090", nil)
 
-	//app.Run()
+	app.Run()
 }

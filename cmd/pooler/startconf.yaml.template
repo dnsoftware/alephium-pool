@@ -1,3 +1,4 @@
+appID: "${APP_ID}"
 etcd:
   endpoints: "${ETCD_NODESLIST}"
   auth:
