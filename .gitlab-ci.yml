@@ -19,7 +19,7 @@ before_script:
 
 stages:
 #  - test
-  - build
+#  - build
   - deploy
 
 #variables:
@@ -41,37 +41,30 @@ stages:
 #      - report.xml
 #    when: always
 
-# Этап сборки
-build:
-  stage: build
-  script:
-
-    # Сборка образа с использованием Dockerfile
-    # - docker build -t "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" .
-    - docker build -f cmd/pooler/Dockerfile -t "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" .
-    # Тег для latest, чтобы можно было легко обновлять образ
-    - docker tag "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" "$IMAGE_NAME:latest"
-
-    - |
-      DOCKER_USERNAME=$(curl -k -s --request GET --header "X-Vault-Token: ${VAULT_TOKEN}" ${VAULT_ADDR}/v1/${VAULT_PATH}/dockerhub  | jq -r .data.login)
-      DOCKER_PASSWORD=$(curl -k -s --request GET --header "X-Vault-Token: ${VAULT_TOKEN}" ${VAULT_ADDR}/v1/${VAULT_PATH}/dockerhub  | jq -r .data.token)
-
-    # Загрузка образа в Docker Hub
-    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-    - docker push "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA"
-    - docker push "$IMAGE_NAME:latest"
+## Этап сборки
+#build:
+#  stage: build
+#  script:
+#
+#    # Сборка образа с использованием Dockerfile
+#    # - docker build -t "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" .
+#    - docker build -f cmd/pooler/Dockerfile -t "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" .
+#    # Тег для latest, чтобы можно было легко обновлять образ
+#    - docker tag "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" "$IMAGE_NAME:latest"
+#
+#    - |
+#      DOCKER_USERNAME=$(curl -k -s --request GET --header "X-Vault-Token: ${VAULT_TOKEN}" ${VAULT_ADDR}/v1/${VAULT_PATH}/dockerhub  | jq -r .data.login)
+#      DOCKER_PASSWORD=$(curl -k -s --request GET --header "X-Vault-Token: ${VAULT_TOKEN}" ${VAULT_ADDR}/v1/${VAULT_PATH}/dockerhub  | jq -r .data.token)
+#
+#    # Загрузка образа в Docker Hub
+#    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+#    - docker push "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA"
+#    - docker push "$IMAGE_NAME:latest"
 
 # Этап деплоя (опционально)
 deploy:
   stage: deploy
   before_script:
-#    # Установите Vault CLI, если он не установлен в контейнере
-#    - apt-get update && apt-get install -y wget unzip jq gettext openssh-client sshpass
-#    - wget https://releases.hashicorp.com/vault/1.14.3/vault_1.14.3_linux_amd64.zip
-#    - unzip vault_1.14.3_linux_amd64.zip
-#    - mv vault /usr/local/bin/
-#    - chmod +x /usr/local/bin/vault
-#    - vault --version  # Проверка установленной версии
 
   only:
     - master # Деплой будет выполняться только при слиянии в ветку master
@@ -162,7 +155,17 @@ deploy:
 
       fi
 
+      # Остановка старого контейнера и запуск нового
+      - |
+        sshpass -p "$sshPassword" ssh -o StrictHostKeyChecking=no "$sshLogin@$ip" <<EOF
+        docker pull $IMAGE_NAME:latest || exit 1
+        docker stop myapp || true
+        docker rm myapp || true
+        docker run -d --name myapp -p 8090:8090 $IMAGE_NAME:latest || exit 1
+      EOF
+
       done
+      
 
   environment:
     name: production
