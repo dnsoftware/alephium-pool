@@ -160,7 +160,7 @@ deploy:
         docker pull $IMAGE_NAME:latest || exit 1
         docker stop alph_pooler || true
         docker rm alph_pooler || true
-        docker run -d --name alph_pooler -p 8090:8090 $IMAGE_NAME:latest || exit 1
+        docker run -d --pull always --name alph_pooler -p 8090:8090 $IMAGE_NAME:latest || exit 1
       EOF
 
       done
