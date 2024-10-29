@@ -65,13 +65,13 @@ build:
 deploy:
   stage: deploy
   before_script:
-    # Установите Vault CLI, если он не установлен в контейнере
-    - apt-get update && apt-get install -y wget unzip jq gettext openssh-client sshpass
-    - wget https://releases.hashicorp.com/vault/1.14.3/vault_1.14.3_linux_amd64.zip
-    - unzip vault_1.14.3_linux_amd64.zip
-    - mv vault /usr/local/bin/
-    - chmod +x /usr/local/bin/vault
-    - vault --version  # Проверка установленной версии
+#    # Установите Vault CLI, если он не установлен в контейнере
+#    - apt-get update && apt-get install -y wget unzip jq gettext openssh-client sshpass
+#    - wget https://releases.hashicorp.com/vault/1.14.3/vault_1.14.3_linux_amd64.zip
+#    - unzip vault_1.14.3_linux_amd64.zip
+#    - mv vault /usr/local/bin/
+#    - chmod +x /usr/local/bin/vault
+#    - vault --version  # Проверка установленной версии
 
   only:
     - master # Деплой будет выполняться только при слиянии в ветку master
@@ -82,7 +82,6 @@ deploy:
       BASE_PATH="/home/pool"
       # Срок действия TLS сертификата в днях
       CERT_PERIOD=365
-
 
 # Получение секретов из Vault
     - echo "Получение секрета из Vault"
