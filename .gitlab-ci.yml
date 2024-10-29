@@ -41,25 +41,25 @@ stages:
 #      - report.xml
 #    when: always
 
-## Этап сборки
-#build:
-#  stage: build
-#  script:
-#
-#    # Сборка образа с использованием Dockerfile
-#    # - docker build -t "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" .
-#    - docker build -f cmd/pooler/Dockerfile -t "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" .
-#    # Тег для latest, чтобы можно было легко обновлять образ
-#    - docker tag "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" "$IMAGE_NAME:latest"
-#
-#    - |
-#      DOCKER_USERNAME=$(curl -k -s --request GET --header "X-Vault-Token: ${VAULT_TOKEN}" ${VAULT_ADDR}/v1/${VAULT_PATH}/dockerhub  | jq -r .data.login)
-#      DOCKER_PASSWORD=$(curl -k -s --request GET --header "X-Vault-Token: ${VAULT_TOKEN}" ${VAULT_ADDR}/v1/${VAULT_PATH}/dockerhub  | jq -r .data.token)
-#
-#    # Загрузка образа в Docker Hub
-#    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-#    - docker push "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA"
-#    - docker push "$IMAGE_NAME:latest"
+# Этап сборки
+build:
+  stage: build
+  script:
+
+    # Сборка образа с использованием Dockerfile
+    # - docker build -t "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" .
+    - docker build -f cmd/pooler/Dockerfile -t "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" .
+    # Тег для latest, чтобы можно было легко обновлять образ
+    - docker tag "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA" "$IMAGE_NAME:latest"
+
+    - |
+      DOCKER_USERNAME=$(curl -k -s --request GET --header "X-Vault-Token: ${VAULT_TOKEN}" ${VAULT_ADDR}/v1/${VAULT_PATH}/dockerhub  | jq -r .data.login)
+      DOCKER_PASSWORD=$(curl -k -s --request GET --header "X-Vault-Token: ${VAULT_TOKEN}" ${VAULT_ADDR}/v1/${VAULT_PATH}/dockerhub  | jq -r .data.token)
+
+    # Загрузка образа в Docker Hub
+    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+    - docker push "$IMAGE_NAME:$CI_COMMIT_SHORT_SHA"
+    - docker push "$IMAGE_NAME:latest"
 
 # Этап деплоя (опционально)
 deploy:
